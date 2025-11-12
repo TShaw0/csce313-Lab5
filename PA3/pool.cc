@@ -25,23 +25,21 @@ ThreadPool::~ThreadPool() {
 
 void ThreadPool::SubmitTask(const std::string &name, Task *task) {
   //TODO: Add task to queue, make sure to lock the queue
-  std::unique_lock<std::mutex> lock(queue_mutex);
+  std::lock_guard<std::mutex> lock(mtx);
   if (done) {
-    std::cout << "Cannot added task to queue" << std::endl;
+    std::cout << "Cannot add task " << name << ": pool is stopping." << std::endl;
     // If Stop() was already called, do not accept new tasks
     delete task;
     return;
   }
   std::cout << "Added task " << name << std::endl;
   queue.push_back(task);  // add new task
-  cv.notify_one();  // wake up one waiting worker thread
 }
 
 void ThreadPool::run_thread() {
   while (true) {
     Task *t = nullptr;
-    std::unique_lock<std::mutex> lock(queue_mutex);
-    cv.wait(lock, [&] { return done || !queue.empty(); });
+    std::lock_guard<std::mutex> lock(mtx);
     //TODO1: if done and no tasks left, break
     if (done && queue.empty()){
       std::cout << "Stopping thread" << std::endl;
@@ -58,7 +56,10 @@ void ThreadPool::run_thread() {
       std::cout << "Started task" << std::endl;
       t->Run();  // run user code
       std::cout << "Finished task" << std::endl;
-      delete t; //TODO4: delete task
+      delete t; //TODO4: delete task 
+    }
+    else {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
   }
 }
@@ -79,15 +80,15 @@ void ThreadPool::remove_task(Task *t) {
 
 void ThreadPool::Stop() {
   //TODO: Delete threads, but remember to wait for them to finish first
-  std::unique_lock<std::mutex> lock(queue_mutex);
+  std::lock_guard<std::mutex> lock(mtx);
   done = true;
-  std::cout << "Called Stop()" << std::endl;
-  cv.notify_all();  // wake up all workers so they can exit
+  std::cout << "Stopping thread pool..." << std::endl;
   
-  for (auto *t : threads) {
-    if (t->joinable())
-      t->join();
-    delete t;
+  for (auto *th : threads) {
+    if (th->joinable())
+      th->join();
+    delete th;
   }
   threads.clear();
+  std::cout << "All threads stopped." << std::endl;
 }

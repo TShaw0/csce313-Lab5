@@ -27,10 +27,12 @@ void ThreadPool::SubmitTask(const std::string &name, Task *task) {
   //TODO: Add task to queue, make sure to lock the queue
   std::unique_lock<std::mutex> lock(queue_mutex);
   if (done) {
+    std::cout << "Cannot added task to queue" << std::endl;
     // If Stop() was already called, do not accept new tasks
     delete task;
     return;
   }
+  std::cout << "Added task " << name << std::endl;
   queue.push_back(task);  // add new task
   cv.notify_one();  // wake up one waiting worker thread
 }
@@ -41,15 +43,21 @@ void ThreadPool::run_thread() {
     std::unique_lock<std::mutex> lock(queue_mutex);
     cv.wait(lock, [&] { return done || !queue.empty(); });
     //TODO1: if done and no tasks left, break
-    if (done && queue.empty())
+    if (done && queue.empty()){
+      std::cout << "Stopping thread" << std::endl;
       break;
-    //TODO2: if no tasks left, continue
-    t = queue.front();
-    //TODO3: get task from queue, remove it from queue, and run it
-    queue.pop_front();
+    }
+    if (!queue.empty()){
+      //TODO2: if no tasks left, continue
+      t = queue.front();
+      //TODO3: get task from queue, remove it from queue, and run it
+      queue.pop_front();
+    }
     //run task outside lock
     if (t) {
+      std::cout << "Started task" << std::endl;
       t->Run();  // run user code
+      std::cout << "Finished task" << std::endl;
       delete t; //TODO4: delete task
     }
   }
@@ -73,6 +81,7 @@ void ThreadPool::Stop() {
   //TODO: Delete threads, but remember to wait for them to finish first
   std::unique_lock<std::mutex> lock(queue_mutex);
   done = true;
+  std::cout << "Called Stop()" << std::endl;
   cv.notify_all();  // wake up all workers so they can exit
   
   for (auto *t : threads) {

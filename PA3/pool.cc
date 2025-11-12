@@ -27,7 +27,7 @@ void ThreadPool::SubmitTask(const std::string &name, Task *task) {
   //TODO: Add task to queue, make sure to lock the queue
   std::lock_guard<std::mutex> lock(mtx);
   if (done) {
-    std::cout << "Cannot add task to queue" << std::endl;
+    std::cout << "Cannot added task to queue" << std::endl;
     //delete task;
     return;
   }

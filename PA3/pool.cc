@@ -44,17 +44,13 @@ void ThreadPool::run_thread() {
     {
       std::lock_guard<std::mutex> lock(mtx);
       //TODO1: if done and no tasks left, break
-      //if (done && queue.empty()){
-      //std::cout << "Stopping thread" << std::endl;
-      //return;
-      //}
-
       if (!queue.empty()) {
 	t = queue.front();
 	queue.erase(queue.begin());
 	num_tasks_unserviced--;
 	t->running = true;
-      } else if (done) {
+      }
+      else if (done) {
 	break; // exit if no tasks and pool is stopping
       }
     }
@@ -68,7 +64,7 @@ void ThreadPool::run_thread() {
     }
     else {
       //if (done) break;
-      //std::this_thread::yield(); // wait briefly
+      std::this_thread::yield(); // wait briefly
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }

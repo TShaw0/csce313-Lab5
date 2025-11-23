@@ -92,8 +92,16 @@ int main(int argc, char* argv[])
   std::vector<std::thread> t_vec2;
   const timepoint          start3 = std::chrono::steady_clock::now();
   // TODO #4: create *num_trans* threads and push_back() each one to t_vec2
+  for (size_t i = 0; i < num_trans; ++i)
+    {
+      t_vec2.emplace_back(teller_threadsafe, &C, trans_arr[i]);
+    }
+
   // TODO #5: join all threads in t_vec2
-  
+  for (std::thread& t : t_vec2)
+    {
+      t.join();
+    }
   // end timer and print result
   const auto end3 = std::chrono::steady_clock::now();
   print_helper(3, start3, end3, C);
